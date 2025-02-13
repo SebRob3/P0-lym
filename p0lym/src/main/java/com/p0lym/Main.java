@@ -2,9 +2,13 @@ package com.p0lym;
 
 import java.io.IOException;
 import java.io.StringReader;
+import java.lang.reflect.Array;
+import java.util.ArrayList;
 
-import com.p0lym.RobotLexer.Token;
-import com.p0lym.RobotLexer.TokenType;
+import javax.swing.text.StyledEditorKit.BoldAction;
+
+import com.p0lym.RobotLexerParser.Token;
+import com.p0lym.RobotLexerParser.TokenType;
 
 public class Main {
     public static void main(String[] args) {
@@ -30,14 +34,8 @@ public class Main {
                 "    putChips: 2 andBalloons: 1 .\n" + 
                 "]\n";
 
-    	RobotLexer lexer = new RobotLexer(new StringReader(testProgram));
-    	try {
-    		Token token;
-    		while ((token = lexer.nextToken()).getType() != TokenType.EOF) {
-    			System.out.println(token);
-    		}
-    	} catch (IOException e) {
-    		e.printStackTrace();
-    	}
+    	RobotLexerParser robot = new RobotLexerParser(new StringReader(testProgram));
+    	ArrayList<Token> tokens = robot.lexer();
+        Boolean correct = robot.parser(tokens);
     }
 }

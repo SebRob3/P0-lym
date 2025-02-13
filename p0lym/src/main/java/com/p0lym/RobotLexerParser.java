@@ -3,8 +3,9 @@ package com.p0lym;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.Reader;
+import java.util.ArrayList;
 
-public class RobotLexer {
+public class RobotLexerParser {
     public static enum TokenType {
         // Symbols
         PIPE("|"),
@@ -81,8 +82,11 @@ public class RobotLexer {
     private int currentColumn;
     private boolean pushBack; // it goes back a character. it enables to peek to the next char.
     private char lastChar;
+
+    private ArrayList<Token> variables = new ArrayList<>();
+    private ArrayList<Token> procedures = new ArrayList<>();
     
-    public RobotLexer(Reader input) {
+    public RobotLexerParser(Reader input) {
         this.reader = new BufferedReader(input);
         this.currentLine = 1;
         this.currentColumn = 0;
@@ -199,4 +203,98 @@ public class RobotLexer {
         
         return new Token(TokenType.INVALID, Character.toString(ch), tokenLine, tokenColumn);
     }
+
+    public ArrayList<Token> lexer() {
+        ArrayList<Token> tokens = new ArrayList<>();
+        try {
+    		Token token;
+    		while ((token = this.nextToken()).getType() != TokenType.EOF) {
+    			tokens.add(token);
+    		}
+    	} catch (IOException e) {
+    		e.printStackTrace();
+    	}
+
+        return tokens;
+    }
+
+    public boolean checkVariableDef(ArrayList<Token> tokens) {
+        for (Token token : tokens) {
+            if ((token.type == TokenType.IDENTIFIER) && (Character.isLowerCase(token.value.charAt(0))) ) {
+                variables.add(token);
+            }
+        }
+
+        return true;
+    }
+
+    //TODO checkProcSintaxis
+    public boolean checkProcSintaxis(ArrayList<Token> tokens) {
+        int tokenCount = 0;
+        for (Token token : tokens) {
+            if (tokenCount == 0) {
+                if (token.getType() != TokenType.PROC) {
+                    return false;
+                }
+                tokenCount++;
+            } else if (tokenCount == 1) {
+                if (token.getType() != TokenType.IDENTIFIER) {
+                    return false;
+                }
+                procedures.add(token);
+                tokenCount++;
+            } else if (tokenCount == 2) {
+                if (token.getType() != TokenType.COLON) {
+                    return false;
+                }
+                tokenCount++;
+            } else if (tokenCount == 3) {
+                if (token.getType() != TokenType.IDENTIFIER) {
+                    return false;
+                }
+                tokenCount++;
+            } else if (tokenCount == 4) {
+                if (token.getType() != TokenType.BRACKET_OPEN) {
+                    return false;
+                }
+            } else if (tokenCount == 5) {
+                if (token.getType() != TokenType.BRACKET_CLOSE) {
+                    return false;
+                }
+            } else if (tokenCount == 6) {
+                if (token.getType() != TokenType.PERIOD) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+
+    public boolean parser(ArrayList<Token> tokens) {
+        if (tokens.isEmpty()) {
+            return false;
+        }
+
+        int pipe = 0;
+
+        ArrayList<Token> command = new ArrayList<>();
+        for (Token token : tokens) {
+            if ((token.getType() == TokenType.PIPE) && (pipe == 0)) {
+                command.add(token);
+                pipe++;
+            } else if (pipe == 1) {
+                command.add(token);
+                if (token.getType() == TokenType.PIPE) {
+                    pipe -= 1;
+                    if (!checkVariableDef(tokens)) {
+                        return false;
+                    };
+                    command.clear();
+                };
+            }
+        }
+
+        return true;
+    }
+
 }
