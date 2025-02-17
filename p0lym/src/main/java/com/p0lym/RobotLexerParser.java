@@ -287,8 +287,8 @@ public class RobotLexerParser {
                 }
                 tokenCount++;
             } else if (tokenCount == 1) {
-                if (((token.getType() != TokenType.IDENTIFIER) && (token.getValue()) != token.getValue().toLowerCase())) {
-                    System.out.println("Error: " + token);
+                if (((token.getType() != TokenType.IDENTIFIER) || !Character.isLowerCase(token.getValue().charAt(0)))) {
+                    System.out.println("Error: " + token + " Invalid procedure name");
                     return new ArrayList<>();
                 }
                 procName.add(token);
@@ -368,18 +368,19 @@ public class RobotLexerParser {
             int i = 0;
             int j = 0;
             int colon = 0;
+            boolean callingProcCheck = true;
             for (Token token : tokens) {
                 if (i == j && token.getType() == TokenType.IDENTIFIER) {
                     if (i >= procName.size() || !procName.get(i).getValue().equals(token.getValue())) {
-                        callingProc = false;
+                        callingProcCheck = false;
                         break;
                     }
                     i++;
                 } else if (i > j && token.getType() == TokenType.COLON) {
                     colon++;
                 } else if (i > j) {
-                    if (j >= procVariables.size()) {
-                        callingProc = false;
+                    if (j > procName.size()) {
+                        callingProcCheck = false;
                         break;
                     }
                     Token variableRequest = procVariables.get(j);
@@ -392,25 +393,25 @@ public class RobotLexerParser {
                             }
                         }
                         if (!found) {
-                            callingProc = false;
+                            callingProcCheck = false;
                             break;
                         }
                     } else if (variableRequest.getType() == TokenType.NUMBER) {
                         if (token.getType() != TokenType.NUMBER && !existVariable(token, localVariables)) {
-                            callingProc = false;
+                            callingProcCheck = false;
                             break;
                         }
                     }
                     j++;
                 } else {
-                    callingProc = false;
+                    callingProcCheck = false;
                     break;
                 }
             }
     
-            if (!(i == procName.size() && (colon == procName.size() || (colon == 0 && procName.size() == 1)))) {
+            if (!((i == procName.size()) && ((colon == procName.size()) || (colon == 0 && procName.size() == 1))) || !callingProcCheck) {
                 callingProc = false;
-            } else {
+            } else{
                 callingProc = true;
             }
             key_i++;
@@ -448,10 +449,11 @@ public class RobotLexerParser {
             int i = 0;
             int j = 0;
             int colon = 0;
+            boolean callingConditionCheck = true;
             for (Token token : tokens) {
                 if (i == j && token.getType() == TokenType.IDENTIFIER) {
                     if (!conditionName.get(i).getValue().equals(token.getValue())) {
-                        callingCondition = false;
+                        callingConditionCheck = false;
                         break;
                     }
                     i++;
@@ -468,23 +470,23 @@ public class RobotLexerParser {
                             }
                         }
                         if (!found) {
-                            callingCondition = false;
+                            callingConditionCheck = false;
                             break;
                         }
                     } else {
                         if (token.getType() != variableRequest.getType() && !existVariable(token, localVariables)) {
-                            callingCondition = false;
+                            callingConditionCheck = false;
                             break;
                         }
                     }
                     j++;
                 } else {
-                    callingCondition = false;
+                    callingConditionCheck = false;
                     break;
                 }
             }
 
-            if (!(i == conditionName.size() && colon == conditionName.size())) {
+            if (!(i == conditionName.size() && colon == conditionName.size()) || !callingConditionCheck) {
                 callingCondition = false;
             } else {
                 callingCondition = true;
@@ -497,7 +499,7 @@ public class RobotLexerParser {
     public boolean checkIf(ArrayList<Token> tokens, HashMap<String, Token> localVariables) {
         boolean ifStatement = false;
         boolean elseStatement = false;
-        boolean bracket = false;
+        int bracket = 0;
 
         ArrayList<Token> condition = new ArrayList<>();
         ArrayList<Token> codeBlockIf = new ArrayList<>();
@@ -516,7 +518,7 @@ public class RobotLexerParser {
                     System.out.println("Error: If statement with wrong sintaxis");
                     return false;
                 }
-            }else if (ifStatement && (token.getType() != TokenType.THEN) && (token.getType() != TokenType.BRACKET_OPEN) && !bracket) {
+            }else if (ifStatement && (token.getType() != TokenType.THEN) && (token.getType() != TokenType.BRACKET_OPEN) && bracket == 0) {
                 condition.add(token);
             } else if (ifStatement && (token.getType() == TokenType.THEN)) {
                 if (!checkCondition(condition, localVariables)) {
@@ -526,31 +528,44 @@ public class RobotLexerParser {
             } else if (token.getType() == TokenType.ELSE) {
                 elseStatement = true;
             } else if (elseStatement && (token.getType() == TokenType.BRACKET_OPEN)) {
-                bracket = true;
-            } else if (elseStatement && bracket && (token.getType() == TokenType.BRACKET_CLOSE)) {
+                if (bracket > 0) {
+                    codeBlockElse.add(token);
+                }
+                bracket++;
+            } else if (elseStatement && (bracket == 1) && (token.getType() == TokenType.BRACKET_CLOSE)) {
                 if (lastToken.type != TokenType.BRACKET_CLOSE && lastToken.type != TokenType.PERIOD) {
                     codeBlockElse.add(token);
                 }
-                bracket = false;
+                bracket--;
                 elseStatement = false;
             } else if (ifStatement && (token.getType() == TokenType.BRACKET_OPEN)) {
-                bracket = true;
-            } else if (ifStatement && bracket && (token.getType() == TokenType.BRACKET_CLOSE)) {
+                if (bracket > 0) {
+                    codeBlockIf.add(token);
+                }
+                bracket++;
+            } else if (ifStatement && bracket == 1 && (token.getType() == TokenType.BRACKET_CLOSE)) {
                 if (lastToken.type != TokenType.BRACKET_CLOSE && lastToken.type != TokenType.PERIOD) {
                     codeBlockIf.add(token);
                 }
-                bracket = false;
+                bracket--;
                 ifStatement = false;
-            } else if (ifStatement && bracket) {
+            } else if (ifStatement && bracket > 0) {
                 codeBlockIf.add(token);
-            } else if (elseStatement && bracket) {
+                if (token.getType() == TokenType.BRACKET_CLOSE) {
+                    bracket--;
+                }
+            } else if (elseStatement && bracket > 0) {
                 codeBlockElse.add(token);
+                if (token.getType() == TokenType.BRACKET_CLOSE) {
+                    bracket--;
+                }
             } else {
                 System.out.println("Error: If statement with wrong sintaxis");
                 return false;
             }
             lastToken = token;
         }
+
         if (!parser(codeBlockIf, null, localVariables) || !parser(codeBlockElse, null, localVariables)) {
             return false;
         }
@@ -560,7 +575,7 @@ public class RobotLexerParser {
 
     public boolean checkWhile(ArrayList<Token> tokens, HashMap<String, Token> localVariables) {
         boolean whileStatement = false;
-        boolean bracket = false;
+        int bracket = 0;
 
         ArrayList<Token> condition = new ArrayList<>();
         ArrayList<Token> codeBlock = new ArrayList<>();
@@ -587,13 +602,13 @@ public class RobotLexerParser {
                 }
                 whileStatement = false;
             } else if ((token.getType() == TokenType.BRACKET_OPEN)) {
-                bracket = true;
+                bracket++;
                 codeBlock.add(token);
-            } else if (bracket && (token.getType() == TokenType.BRACKET_CLOSE)) {
+            } else if (bracket == 1 && (token.getType() == TokenType.BRACKET_CLOSE)) {
                 codeBlock.add(token);
-                bracket = false;
+                bracket--;
                 whileStatement = false;
-            } else if (bracket) {
+            } else if (bracket > 0) {
                 codeBlock.add(token);
             } else {
                 System.out.println("Error: While statement with wrong sintaxis");
@@ -604,7 +619,7 @@ public class RobotLexerParser {
         if (!parser(codeBlock, null, localVariables)) {
             return false;
         }
-        else if (whileStatement || bracket) {
+        else if (whileStatement || bracket != 0) {
             System.out.println("Error: While statement with wrong sintaxis");
             return false;
         }
@@ -614,28 +629,31 @@ public class RobotLexerParser {
 
     public boolean checkFor(ArrayList<Token> tokens, HashMap<String, Token> localVariables) {
         boolean forStatement = false;
-        boolean bracket = false;
+        int bracket = 0;
 
         ArrayList<Token> codeBlock = new ArrayList<>();
 
         Token lastToken = null;
 
         for (Token token : tokens) {
-            if (lastToken != null && (lastToken.getType() == TokenType.FOR || lastToken.getType() == TokenType.REPEAT) && token.getType() != TokenType.COLON) {
-                System.out.println("Error: For statement with wrong sintaxis");
-                return false;
+            if (lastToken != null && (lastToken.getType() == TokenType.FOR || lastToken.getType() == TokenType.REPEAT)) {
+                if (token.getType() != TokenType.COLON) {
+                    System.out.println("Error: For statement with wrong sintaxis");
+                    return false;
+                }
             } else if (token.getType() == TokenType.FOR) {
                 forStatement = true;
-            } else if (forStatement && (token.getType() != TokenType.NUMBER && variableType(token, localVariables).getType() != TokenType.NUMBER)) {
-                return false;
             } else if (forStatement && (token.getType() == TokenType.REPEAT)) {
                 forStatement = false;
-            } else if (forStatement && (token.getType() == TokenType.BRACKET_OPEN)) {
-                bracket = true;
-            } else if (forStatement && bracket && (token.getType() == TokenType.BRACKET_CLOSE)) {
-                bracket = false;
-                forStatement = false;
-            } else if (bracket) {
+            } else if (forStatement) {
+                if (!(token.getType() == TokenType.NUMBER || (token.getType() == TokenType.IDENTIFIER && existVariable(token, localVariables)))) {
+                    return false;
+                }
+            } else if (!forStatement && (token.getType() == TokenType.BRACKET_OPEN)) {
+                bracket++;
+            } else if (!forStatement && bracket == 1 && (token.getType() == TokenType.BRACKET_CLOSE)) {
+                bracket--;
+            } else if (bracket > 0) {
                 codeBlock.add(token);
             } else {
                 System.out.println("Error: For statement with wrong sintaxis");
@@ -676,10 +694,11 @@ public class RobotLexerParser {
             int i = 0;
             int j = 0;
             int colon = 0;
+            boolean callingProcCheck = true;
             for (Token token : tokens) {
                 if (i == j && token.getType() == TokenType.IDENTIFIER) {
                     if (!procName.get(i).getValue().equals(token.getValue())) {
-                        callingProc = false;
+                        callingProcCheck = false;
                         break;
                     }
                     i++;
@@ -689,23 +708,23 @@ public class RobotLexerParser {
                     Token variableRequest = procVariables.get(j);
                     if (variableRequest.getType() == TokenType.IDENTIFIER) {
                         if (token.getType() == TokenType.IDENTIFIER && !localVariables.containsKey(token.value) && !variables.containsKey(token.value)) {
-                            callingProc = false;
+                            callingProcCheck = false;
                             break;
                         }
                     } else {
                         if (token.getType() != variableRequest.getType() && variableRequest.getType() != variableType(token, localVariables).getType()) {
-                            callingProc = false;
+                            callingProcCheck = false;
                             break;
                         }
                     }
                     j++;
                 } else {
-                    callingProc = false;
+                    callingProcCheck = false;
                     break;
                 }
             }
 
-            if (!(i == procName.size() && j == procVariables.size() && colon == procVariables.size())) {
+            if (!(i == procName.size() && j == procVariables.size() && colon == procVariables.size()) || !callingProcCheck) {
                 callingProc = false;
             } else {
                 callingProc = true;
@@ -740,7 +759,7 @@ public class RobotLexerParser {
 
         ArrayList<Token> canPutVariables = new ArrayList<>();
         canPutVariables.add(new Token(TokenType.NUMBER, "n", 0, 0));
-        canPutVariables.add(new Token(TokenType.CONSTANT, "#ballons", 0, 0));
+        canPutVariables.add(new Token(TokenType.CONSTANT, "#balloons", 0, 0));
         canPutVariables.add(new Token(TokenType.CONSTANT, "#chips", 0, 0));
 
         conditions.put(canPut, canPutVariables);
@@ -752,7 +771,7 @@ public class RobotLexerParser {
 
         ArrayList<Token> canPickVariables = new ArrayList<>();
         canPickVariables.add(new Token(TokenType.NUMBER, "n", 0, 0));
-        canPickVariables.add(new Token(TokenType.CONSTANT, "#ballons", 0, 0));
+        canPickVariables.add(new Token(TokenType.CONSTANT, "#balloons", 0, 0));
         canPickVariables.add(new Token(TokenType.CONSTANT, "#chips", 0, 0));
 
         conditions.put(canPick, canPickVariables);
@@ -866,7 +885,7 @@ public class RobotLexerParser {
 
         ArrayList<Token> putVariables = new ArrayList<>();
         putVariables.add(new Token(TokenType.NUMBER, "n", 0, 0));
-        putVariables.add(new Token(TokenType.CONSTANT, "#ballons", 0, 2));
+        putVariables.add(new Token(TokenType.CONSTANT, "#balloons", 0, 2));
         putVariables.add(new Token(TokenType.CONSTANT, "#chips", 0, 2));
 
         defaultProcedures.put(put, putVariables);
@@ -878,7 +897,7 @@ public class RobotLexerParser {
 
         ArrayList<Token> pickVariables = new ArrayList<>();
         pickVariables.add(new Token(TokenType.NUMBER, "n", 0, 0));
-        pickVariables.add(new Token(TokenType.CONSTANT, "#ballons", 0, 2));
+        pickVariables.add(new Token(TokenType.CONSTANT, "#balloons", 0, 2));
         pickVariables.add(new Token(TokenType.CONSTANT, "#chips", 0, 2));
 
         defaultProcedures.put(pick, pickVariables);
@@ -1095,7 +1114,7 @@ public class RobotLexerParser {
                 break;
             }
             //Check Variable definitions
-            else if ((token.getType() == TokenType.PIPE) && (pipe == 0) && bracket == 0) {
+            if ((token.getType() == TokenType.PIPE) && (pipe == 0) && bracket == 0) {
                 command.add(token);
                 pipe++;
             } else if (pipe == 1) {
@@ -1147,6 +1166,7 @@ public class RobotLexerParser {
                         return false;
                     }
                     command.clear();
+                    localVariables.clear();
                     proc = false;
                     procName = null;
                 } else if (bracket > 1) {
@@ -1257,30 +1277,31 @@ public class RobotLexerParser {
                     System.out.println("Error: Variable used but never defined (" + lastToken + ")");
                     return false;
                 }
+                command.clear();
                 command.add(lastToken);
                 command.add(token);
 
                 variableName = lastToken;
                 callingProc = false;
                 variable = true;
-            } else if (variable && (token.getType() == TokenType.NUMBER || token.getType() == TokenType.CONSTANT || token.getType() == TokenType.IDENTIFIER)) {
-                if (token.getType() == TokenType.IDENTIFIER) {
+            } else if (variable && token.getType() == TokenType.PERIOD && (lastToken.getType() == TokenType.NUMBER || lastToken.getType() == TokenType.CONSTANT || lastToken.getType() == TokenType.IDENTIFIER)) {
+                if (lastToken.getType() == TokenType.IDENTIFIER) {
                     boolean existingVariable = false;
                     for (String variableKey : localVariables.keySet()) {
-                        if (variableKey.equals(token.getValue())) {
+                        if (variableKey.equals(lastToken.getValue())) {
                             existingVariable = true;
                             break;
                         }
                     }
                     if (!existingVariable) {
                         for (String variableKey : variables.keySet()) {
-                            if (variableKey.equals(token.getValue())) {
+                            if (variableKey.equals(lastToken.getValue())) {
                                 existingVariable = true;
                                 break;
                             }
                         }
                     }
-                    if (!existingVariable) {
+                    if (!existingVariable || command.size() != 3) {
                         System.out.println("Error: Variable assignment with wrong sintaxis (" + token + ")");
                         return false;
                     } else if (procToken != null) {
@@ -1290,9 +1311,9 @@ public class RobotLexerParser {
                     }
                 }
                 command.clear();
-            } else if (token.getType() == TokenType.PERIOD && variable) {
-                command.clear();
                 variable = false;
+            } else if (token.getType() != TokenType.PERIOD && variable) {
+                command.add(token);
             }
 
             else {
@@ -1326,6 +1347,10 @@ public class RobotLexerParser {
                             foundProc = false;
                             break;
                         }
+                    }
+                    if (!callingProc) {
+                        System.out.println("Error: Invalid token (" + token + ")");
+                        return false;
                     }
                 }
 
