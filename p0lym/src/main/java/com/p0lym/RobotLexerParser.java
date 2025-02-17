@@ -336,42 +336,52 @@ public class RobotLexerParser {
     }
 
     public boolean checkCallingDefProc(ArrayList<Token> tokens, HashMap<String, Token> localVariables) {
-        //TODO incluir J(n) y G(x,y)
+        // Ensure the tokens list has enough elements
+        if (tokens.size() < 1) {
+            System.out.println("Error: Procedure call with wrong syntax");
+            return false;
+        }
+    
+        // Ensure the last token is a PERIOD or BRACKET_CLOSE
         if (tokens.get(tokens.size() - 1).getType() != TokenType.PERIOD && tokens.get(tokens.size() - 1).getType() != TokenType.BRACKET_CLOSE) {
-            System.out.println("Error: Procedure call with wrong sintaxis");
+            System.out.println("Error: Procedure call with wrong syntax");
             return false;
         } else {
             tokens.remove(tokens.size() - 1);
         }
-
+    
         HashMap<ArrayList<Token>, ArrayList<Token>> checkProcs = new HashMap<>();
-
+    
         for (ArrayList<Token> procKey : defaultProcedures.keySet()) {
             if (procKey.get(0).getValue().equals(tokens.get(0).getValue())) {
                 checkProcs.put(procKey, defaultProcedures.get(procKey));
             }
         }
-
+    
         boolean callingProc = false;
         int key_i = 0;
         ArrayList<ArrayList<Token>> keys = new ArrayList<>(checkProcs.keySet());
         while (!callingProc && key_i < keys.size()) {
             ArrayList<Token> procName = keys.get(key_i);
             ArrayList<Token> procVariables = checkProcs.get(procName);
-
+    
             int i = 0;
             int j = 0;
             int colon = 0;
             for (Token token : tokens) {
                 if (i == j && token.getType() == TokenType.IDENTIFIER) {
-                    if (!procName.get(i).getValue().equals(token.getValue())) {
+                    if (i >= procName.size() || !procName.get(i).getValue().equals(token.getValue())) {
                         callingProc = false;
                         break;
                     }
                     i++;
-                } else if (i > j && token.getType() == TokenType.COLON){
+                } else if (i > j && token.getType() == TokenType.COLON) {
                     colon++;
-                }else if ( i > j) {
+                } else if (i > j) {
+                    if (j >= procVariables.size()) {
+                        callingProc = false;
+                        break;
+                    }
                     Token variableRequest = procVariables.get(j);
                     if (variableRequest.getType() == TokenType.CONSTANT) {
                         boolean found = false;
@@ -397,7 +407,7 @@ public class RobotLexerParser {
                     break;
                 }
             }
-
+    
             if (!(i == procName.size() && (colon == procName.size() || (colon == 0 && procName.size() == 1)))) {
                 callingProc = false;
             } else {
@@ -405,7 +415,7 @@ public class RobotLexerParser {
             }
             key_i++;
         }
-
+    
         return callingProc;
     }
 
