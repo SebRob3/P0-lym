@@ -1,14 +1,9 @@
 package com.p0lym;
 
-import java.io.IOException;
 import java.io.StringReader;
-import java.lang.reflect.Array;
 import java.util.ArrayList;
 
-import javax.swing.text.StyledEditorKit.BoldAction;
-
 import com.p0lym.RobotLexerParser.Token;
-import com.p0lym.RobotLexerParser.TokenType;
 
 public class Main {
     public static void main(String[] args) {
@@ -36,6 +31,7 @@ public class Main {
 
     	RobotLexerParser robot = new RobotLexerParser(new StringReader(testProgram));
     	ArrayList<Token> tokens = robot.lexer();
-        Boolean correct = robot.parser(tokens);
+        Boolean correct = robot.parser(tokens, null, null);
+        System.out.println(correct);
     }
 }
