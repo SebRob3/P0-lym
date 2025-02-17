@@ -1,37 +1,41 @@
 package com.p0lym;
 
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.io.IOException;
 import java.io.StringReader;
 import java.util.ArrayList;
+import java.util.Scanner;
 
 import com.p0lym.RobotLexerParser.Token;
 
 public class Main {
     public static void main(String[] args) {
-        String testProgram = "|nom x y one|\n" +
-                "proc putChips: n andBalloons: m [\n" +
-                "    |c b|\n" +
-                "    c := n .\n" + 
-                "    b := m .\n" + 
-                "    put : c ofType: #chips .  put: b ofType: #balloons ]\n" +
-                "\n" +
-                "proc goNorth [\n" +
-                "	 while: canMove: 1 inDir: #north do: [ move: 1 inDir: #north .\n" + 
-                "        ]\n" + 
-                "]\n" +
-                "\n" +
-                "\n" +
-                "proc goWest [\n" + 
-                "    if: canMove: 1 inDir: #west then: [move: 1 inDir: #west] else\n" + 
-                "       : [nop .]]\n" +
-                "\n" +
-                "[\n" + 
-                "    goTo: 3 with: 3 .\n" + 
-                "    putChips: 2 andBalloons: 1 .\n" + 
-                "]\n";
+        Scanner scanner = new Scanner(System.in);
+        System.out.print("Ingrese la ruta del archivo con el código del robot: ");
 
-    	RobotLexerParser robot = new RobotLexerParser(new StringReader(testProgram));
-    	ArrayList<Token> tokens = robot.lexer();
-        Boolean correct = robot.parser(tokens, null, null);
-        System.out.println(correct);
+        String filePath = scanner.nextLine(); // Ruta del archivo con el código del robot
+        scanner.close();
+        
+        try (BufferedReader br = new BufferedReader(new FileReader(filePath))) {
+            StringBuilder sb = new StringBuilder();
+            String line;
+            
+            // Leer todo el archivo línea por línea
+            while ((line = br.readLine()) != null) {
+                sb.append(line).append("\n");
+            }
+
+            // Crear el lexer y parser con la entrada del archivo
+            RobotLexerParser lexerParser = new RobotLexerParser(new StringReader(sb.toString()));
+            ArrayList<RobotLexerParser.Token> tokens = lexerParser.lexer();
+
+            // Ejecutar el parser con los tokens obtenidos
+            boolean isValid = lexerParser.parser(tokens, null, null);
+            System.out.println("¿Programa válido? " + (isValid ? "Sí" : "No"));
+
+        } catch (IOException e) {
+            System.err.println("Error al leer el archivo: " + e.getMessage());
+        }
     }
 }
