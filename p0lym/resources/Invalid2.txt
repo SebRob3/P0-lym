@@ -1,0 +1,3 @@
+proc 123Move [
+    move: 1 inDir: #south .
+]

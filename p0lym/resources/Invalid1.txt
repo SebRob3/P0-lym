@@ -1,0 +1,2 @@
+proc incomplete [
+    move: 1 inDir: #west .

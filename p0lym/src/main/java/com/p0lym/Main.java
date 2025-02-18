@@ -7,8 +7,6 @@ import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.Scanner;
 
-import com.p0lym.RobotLexerParser.Token;
-
 public class Main {
     public static void main(String[] args) {
         Scanner scanner = new Scanner(System.in);

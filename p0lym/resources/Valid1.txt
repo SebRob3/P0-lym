@@ -1,0 +1,13 @@
+|x y z|
+
+proc moveAndTurn: steps and: direction [
+    move: steps inDir: #north .
+    turn: #left .
+]
+
+proc putObjects: n ofType: obj [
+    put: n ofType: #chips .
+]
+
+moveAndTurn: 3 and: #north .
+putObjects: 2 ofType: #chips .
