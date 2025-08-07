@@ -837,7 +837,7 @@ public class RobotLexerParser {
     private void defaultProcs() {
         // Goto
         ArrayList<Token> goTo = new ArrayList<>();
-        goTo.add(new Token(TokenType.IDENTIFIER, "goTo", 0, 0));
+        goTo.add(new Token(TokenType.IDENTIFIER, "goto", 0, 0));
         goTo.add(new Token(TokenType.IDENTIFIER, "with", 0, 2));
 
         ArrayList<Token> goToVariables = new ArrayList<>();

@@ -1,6 +1,6 @@
 proc complexBehavior [
-    if: facing: #north then: [
-        while: canMove: 1 inDir: #north do: [
+    if: facing: #north . then: [
+        while: canMove: 1 inDir: #north . do: [
             move: 1 inDir: #north .
         ]
     ] else: [
@@ -12,5 +12,20 @@ proc simpleAction [
     nop .
 ]
 
+[
 complexBehavior .
 simpleAction .
+]
+
+// Constant translations
+    translation.put("#north", 'n')
+    translation.put("#right", 'r')
+    translation.put("#front", 'α')
+    translation.put("#left", 'β')
+    translation.put("#back", 'γ')
+    translation.put("#south", 'δ')
+    translation.put("#east", 'ε')
+    translation.put("#west", 'ζ')
+    translation.put("#around", 'η')
+    translation.put("#balloons", 'θ')
+    translation.put("#chips", 'ι')

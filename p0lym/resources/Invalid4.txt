@@ -2,4 +2,4 @@ proc moveSteps: n [
     move: n inDir: #east .
 ]
 
-moveSteps .
+[moveSteps .]

@@ -5,9 +5,11 @@ proc moveAndTurn: steps and: direction [
     turn: #left .
 ]
 
-proc putObjects: n ofType: obj [
+proc putObjects: n something: obj [
     put: n ofType: #chips .
 ]
 
-moveAndTurn: 3 and: #north .
-putObjects: 2 ofType: #chips .
+[
+    moveAndTurn: 3 and: #north .
+    putObjects: 2 something: #chips .
+]

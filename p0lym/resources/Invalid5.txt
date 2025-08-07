@@ -1,5 +1,5 @@
 proc errorIf [
-    if: canMove: 1 inDir: #west [
+    if: canMove: 1 inDir: #west . [
         move: 1 inDir: #west .
     ]
 ]
